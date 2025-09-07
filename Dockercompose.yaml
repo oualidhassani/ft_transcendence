@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  auth-service:
+    build:
+      context: ./services/auth-service
+      args:
+        APP_DIR: /usr/src/app
+    volumes:
+      - ./services/auth-service:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - JWT_SECRET=transcendence-secret-key
+      - APP_DIR=/usr/src/app
+    ports:
+      - "3001:3001"
+    depends_on:
+      - database
+
+  database:
+    build:
+      context: ./Shared_dataBase
+      args:
+        APP_DIR=/usr/src/db
+    volumes:
+      - ./Shared_dataBase:/usr/src/db
+      - /usr/src/db/node_modules
+    environment:
+      - SQLITE_FILE=/usr/src/db/data.db
