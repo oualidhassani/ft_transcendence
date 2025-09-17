@@ -13,7 +13,7 @@ class Database
 {
     constructor() 
     {
-        const db_path = path.join(__dirname, '../../database/transcendence.db')
+    const db_path = path.join('/app/database', 'transcendence.db');
         this.db = new sqlite.Database(db_path, (err) =>
         {
             if (err)

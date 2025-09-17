@@ -4,22 +4,19 @@ WORKDIR /app
 
 RUN apk add --no-cache curl
 
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
 COPY services/auth-service/package*.json ./
-
 RUN npm install
 
 COPY services/auth-service/ .
+
 COPY Shared_dataBase/ ./Shared_dataBase/
 
-RUN mkdir -p /app/database && \
-    mkdir -p /app/Shared_dataBase/database && \
-    chown -R nodejs:nodejs /app && \
-    chmod -R 755 /app && \
-    chmod -R 775 /app/Shared_dataBase && \
-    chmod -R 775 /app/database
+RUN mkdir -p /app/database
+
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 

@@ -1,19 +1,25 @@
-version: '3.9'
-
 services:
   auth-service:
     build:
-      context: .
-      dockerfile: ./services/auth-service/Dockerfile
-    volumes:
-      - /app/node_modules                   
-      - ./Shared_dataBase:/app/Shared_dataBase:rw
-    environment:
-      - JWT_SECRET=transcendence-secret-key
+      context: .  
+      dockerfile: services/auth-service/Dockerfile
+    container_name: ft_transcendence_auth
     ports:
       - "3001:3001"
-    command: sh -c "
-      cd /app/Shared_dataBase && 
-      npm install sqlite3 --save && 
-      cd /app && 
-      node server.js"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=transcendence-secret-key-change-in-production
+    volumes:
+      - ./Shared_dataBase:/app/Shared_dataBase:rw
+      - ./database:/app/database:rw
+    networks:
+      - transcendence-network
+    restart: unless-stopped
+
+networks:
+  transcendence-network:
+    driver: bridge
+
+volumes:
+  database-data:
+    driver: local

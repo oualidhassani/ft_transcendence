@@ -3,7 +3,7 @@ import Fastify from 'fastify';
 import bcrypt from 'bcrypt';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
-import db from './Shared_dataBase/database/db-connection.js';
+import db from './Shared_dataBase/database/db-connection.js'; 
 
 const app = Fastify(
   {
