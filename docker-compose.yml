@@ -1,11 +1,11 @@
 services:
   auth-service:
     build:
-      context: .  
+      context: .
       dockerfile: services/auth-service/Dockerfile
     container_name: ft_transcendence_auth
     ports:
-      - "3001:3001"
+      - "3010"
     environment:
       - NODE_ENV=production
       - JWT_SECRET=transcendence-secret-key-change-in-production
