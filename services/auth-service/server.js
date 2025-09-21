@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import jwt from "@fastify/jwt";
 import bcrypt from "bcrypt";
-import db from "../../Shared_dataBase/database/db-connection.js"
+import db from "./Shared_dataBase/database/db-connection.js"
 const app = Fastify({
   logger: true,
 });

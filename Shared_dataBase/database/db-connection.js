@@ -9,7 +9,11 @@ const sqlite = sqlite3.verbose();
 
 class Database {
   constructor() {
-    const db_path = path.join(__dirname, "../../database/transcendence.db");
+    const db_path = process.env.NODE_ENV === 'production' 
+    ? path.join(__dirname, "../../database/transcendence.db")  // Docker container path
+    : path.join(__dirname, "../../../database/transcendence.db"); // Local development path
+    console.log("Database path:", db_path);
+
     this.db = new sqlite.Database(db_path, (err) => {
       if (err) console.error("Database opening error: ", err);
       else console.log("Connecting to database ");

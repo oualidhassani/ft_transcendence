@@ -1,25 +1,27 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-RUN apk add --no-cache curl
+RUN apt-get update && apt-get install -y \
+    curl \
+    python3 \
+    make \
+    g++ \
+    sqlite3 \
+    libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY services/auth-service/package*.json ./
 RUN npm install
 
-COPY services/auth-service/ .
-
+COPY services/auth-service/ ./
 COPY Shared_dataBase/ ./Shared_dataBase/
 
-RUN mkdir -p /app/database
-
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-
-RUN chown -R nodejs:nodejs /app
-
-USER nodejs
+RUN mkdir -p database && chmod 755 database
 
 EXPOSE 3010
+
+# HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+#   CMD curl -f http://localhost:3010/test || exit 1
 
 CMD ["node", "server.js"]
