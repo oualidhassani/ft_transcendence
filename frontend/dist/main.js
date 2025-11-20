@@ -1524,7 +1524,7 @@ class AppRouter {
                 const statusDiv = document.getElementById('settings-status');
                 const avatarOptions = document.querySelectorAll(".avatar-option");
                 const avatarInput = document.getElementById("settings-avatar");
-                const profileAvatar = document.querySelector('.user-avatar'); // main avatar in UI
+                const profileAvatar = document.querySelector('.user-avatar');
                 if (avatarOptions && avatarInput) {
                     avatarOptions.forEach(option => {
                         option.addEventListener("click", () => {

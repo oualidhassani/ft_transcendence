@@ -113,7 +113,6 @@ export function createTournamentListener(userId, tournamentId, navigateCallback)
       </div>
     </div>
   `;
-    // ✅ NEW: This missing function handles creating the bracket HTML easily
     const resolveAndRenderBracket = async (p1Id, p2Id, p3Id, p4Id) => {
         const u1 = await resolveUser(p1Id);
         const u2 = await resolveUser(p2Id);
@@ -125,20 +124,22 @@ export function createTournamentListener(userId, tournamentId, navigateCallback)
             html += createMatchHTML(u3, u4, "Semi-Final 2");
             amIPlaying = amIPlaying || u3.isMe || u4.isMe;
         }
-        return { html, amIPlaying, users: [u1, u2] }; // Return users for VS screen setup
+        return { html, amIPlaying, users: [u1, u2] };
     };
     const setupGameView = (p1, p2) => {
         if (!els.matchInfo)
             return;
         els.matchInfo.innerHTML = `
       <div class="flex flex-col items-center">
-         <img src="${p1.avatar}" class="w-24 h-24 rounded-full border-4 ${p1.isMe ? 'border-emerald-500' : 'border-gray-500'} shadow-lg mb-3 object-cover">
-         <span class="text-xl font-bold text-white">${p1.name}</span>
+         <img src="${p1.avatar}" class="vs-avatar ${p1.isMe ? 'vs-avatar-me' : 'vs-avatar-opponent'}">
+         <span class="vs-name">${p1.name}</span>
       </div>
-      <div class="text-6xl font-black text-white/20 italic">VS</div>
+
+      <div class="text-6xl font-black text-white/20 italic animate-pulse">VS</div>
+
       <div class="flex flex-col items-center">
-         <img src="${p2.avatar}" class="w-24 h-24 rounded-full border-4 ${p2.isMe ? 'border-emerald-500' : 'border-red-500'} shadow-lg mb-3 object-cover">
-         <span class="text-xl font-bold text-white">${p2.name}</span>
+         <img src="${p2.avatar}" class="vs-avatar ${p2.isMe ? 'vs-avatar-me' : 'vs-avatar-opponent'}">
+         <span class="vs-name">${p2.name}</span>
       </div>
     `;
     };
@@ -226,7 +227,6 @@ export function createTournamentListener(userId, tournamentId, navigateCallback)
                 resolveAndRenderBracket(msg.payload.semi1.players[0], msg.payload.semi1.players[1], msg.payload.semi2.players[0], msg.payload.semi2.players[1]).then(({ html, amIPlaying }) => {
                     if (els.bracketContent)
                         els.bracketContent.innerHTML = html;
-                    // Determine who is playing whom to populate VS screen
                     let p1 = null, p2 = null;
                     resolveUser(msg.payload.semi1.players[0]).then(u1 => {
                         resolveUser(msg.payload.semi1.players[1]).then(u2 => {
@@ -264,7 +264,7 @@ export function createTournamentListener(userId, tournamentId, navigateCallback)
                     runCountdown(5, () => {
                         if (amIPlaying) {
                             switchView('game');
-                            setupGameView(users[0], users[1]); // Setup VS Screen
+                            setupGameView(users[0], users[1]);
                             if (els.readyOverlay)
                                 els.readyOverlay.style.display = "flex";
                             if (els.readyBtn) {
@@ -280,7 +280,6 @@ export function createTournamentListener(userId, tournamentId, navigateCallback)
                 switchView('bracket');
                 if (els.bracketTitle)
                     els.bracketTitle.innerText = "CHAMPION";
-                // Just resolve user, don't use bracket renderer
                 resolveUser(msg.payload.winner).then(winner => {
                     if (els.bracketContent) {
                         els.bracketContent.innerHTML = `

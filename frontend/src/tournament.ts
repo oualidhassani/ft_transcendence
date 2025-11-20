@@ -128,13 +128,15 @@ export function createTournamentListener(userId: number, tournamentId: string, n
     if (!els.matchInfo) return;
     els.matchInfo.innerHTML = `
       <div class="flex flex-col items-center">
-         <img src="${p1.avatar}" class="w-24 h-24 rounded-full border-4 ${p1.isMe ? 'border-emerald-500' : 'border-gray-500'} shadow-lg mb-3 object-cover">
-         <span class="text-xl font-bold text-white">${p1.name}</span>
+         <img src="${p1.avatar}" class="vs-avatar ${p1.isMe ? 'vs-avatar-me' : 'vs-avatar-opponent'}">
+         <span class="vs-name">${p1.name}</span>
       </div>
-      <div class="text-6xl font-black text-white/20 italic">VS</div>
+
+      <div class="text-6xl font-black text-white/20 italic animate-pulse">VS</div>
+
       <div class="flex flex-col items-center">
-         <img src="${p2.avatar}" class="w-24 h-24 rounded-full border-4 ${p2.isMe ? 'border-emerald-500' : 'border-red-500'} shadow-lg mb-3 object-cover">
-         <span class="text-xl font-bold text-white">${p2.name}</span>
+         <img src="${p2.avatar}" class="vs-avatar ${p2.isMe ? 'vs-avatar-me' : 'vs-avatar-opponent'}">
+         <span class="vs-name">${p2.name}</span>
       </div>
     `;
   };
