@@ -1,7 +1,6 @@
 import {game_start, listenForInputLocal} from "./game.js";
 import "./game_soket.js"
 import {initgameSocket, sendMessage, removeMessageListener, addMessageListener } from "./game_soket.js"
-import {initchatSocket, onChatMessage} from "./chat_soket.js"
 import {
   cleanupGame,
   addCleanupListener,
@@ -16,11 +15,17 @@ import {
   fetchUserDetails,
 } from "./game_shared.js";
 import { ChatManager } from "./chat/index.js";
+import {
+  createTournamentListener,
+  cleanupTournamentMatch,
+  setupTournamentGameListeners
+} from "./tournament.js"
 // import { getAllUsers } from "../loadSharedDb.ts";
 
 console.log("start Pong game");
 
 let gameid = "";
+
 interface Page {
   title: string;
   content: string;
@@ -128,7 +133,6 @@ private async performLogin(username: string, password: string): Promise<boolean>
 
     this.setLoggedIn(true);
      initgameSocket();
-    //  initchatSocket();
 
     const respUser = data.user ?? data;
     if (respUser && typeof respUser === "object") {
@@ -223,7 +227,6 @@ private async checkAuth(): Promise<void> {
     this.currentUser = payload.username || null;
     this.setLoggedIn(true);
     initgameSocket();
-    // initchatSocket();
     const storedUserData = localStorage.getItem('user_data');
     if (storedUserData) {
       try {
@@ -412,7 +415,6 @@ private async navigateTo(path: string, pushState: boolean = true): Promise<void>
         body.classList.toggle('sidebar-open');
     };
 
-    // Add event listeners with null checks
     const toggleButton: HTMLElement | null = document.getElementById('sidebar-toggle');
     const overlay: HTMLElement | null = document.getElementById('sidebar-overlay');
 
@@ -424,7 +426,6 @@ private async navigateTo(path: string, pushState: boolean = true): Promise<void>
         overlay.addEventListener('click', toggleSidebar);
     }
 
-    // Close sidebar when clicking nav links (optional)
     const navLinks: NodeListOf<Element> = document.querySelectorAll('.nav-link');
     navLinks.forEach((link: Element) => {
         link.addEventListener('click', () => {
@@ -438,7 +439,6 @@ private async navigateTo(path: string, pushState: boolean = true): Promise<void>
     console.log(`📄 Loaded page: ${page}`);
   }
 
-  // Render the dashboard layout once, then only update content
 private renderDashboardLayout(): void {
   console.log(`user info :` ,this.user);
   this.container.innerHTML = `
@@ -507,7 +507,6 @@ private renderDashboardLayout(): void {
 
   this.contentContainer = document.getElementById('dashboard-main-content');
 
-  // Setup the logout functionality
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', async (e) => {
@@ -516,7 +515,6 @@ private renderDashboardLayout(): void {
     });
   }
 
-  // Add event listener to toggle user dropdown menu
   const userMenuToggle = document.getElementById('user-menu-toggle');
   const userDropdown = document.getElementById('user-dropdown');
   if (userMenuToggle && userDropdown) {
@@ -525,7 +523,6 @@ private renderDashboardLayout(): void {
     });
   }
 
-  // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     if (userDropdown && !userDropdown.contains(e.target as Node)) {
       userDropdown.classList.remove('show');
@@ -637,9 +634,6 @@ private getHomePage(): Page {
 }
 
 
-// Make sure to import { createTournamentGameListener, setupGameListeners, ... } from "./game_shared.js"
-
-// ... existing class methods ...
 
 private getTournamentLobbyPage(): Page {
     return {
@@ -745,8 +739,7 @@ private getTournamentLobbyPage(): Page {
           </div>
         </div>
       `,
-      // ... (init function remains the same) ...
-      init: () => {
+init: () => {
         console.log("🏟️ Tournament Lobby Initialized");
         const tId = localStorage.getItem('activeTournamentId');
         if(!tId) { this.navigateTo("dashboard/game/tournament"); return; }
@@ -916,7 +909,6 @@ private getTournamentLobbyPage(): Page {
               card.onmouseover = () => card.style.transform = "translateX(5px)";
               card.onmouseout = () => card.style.transform = "translateX(0)";
 
-              // Fix player count safely
               let count = 0;
               if (t.numPlayers !== undefined) count = t.numPlayers;
               else if (Array.isArray(t.players)) count = t.players.length;
@@ -1098,11 +1090,6 @@ private getremotepage(): Page {
     init: () => {
       console.log("🌐 Remote game page loaded");
       cleanupGame(this.user.id, false);
-    //   const res = fetch("/api/auth/me", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ username, password }),
-    // });
       setupNavigationHandlers(
         this.user.id,
         "back-button-remote",
@@ -1877,9 +1864,7 @@ private getStatusPage(): Page {
 
 }
 
-// ==========================
-// Initialize App
-// ==========================
+
 document.addEventListener("DOMContentLoaded", () => {
   new AppRouter("app-container");
 });

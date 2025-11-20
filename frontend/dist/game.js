@@ -2,22 +2,39 @@ import { sendMessage } from "./game_soket.js";
 export function game_start(config, state, ctx) {
     const { canvas: c, paddle, ball } = config;
     const { paddles, ball: ballPos } = state;
-    ctx.clearRect(0, 0, c.width, c.height);
+    const scaleFactor = 0.5;
+    const scaledCanvasWidth = c.width * scaleFactor;
+    const scaledCanvasHeight = c.height * scaleFactor;
+    ctx.clearRect(0, 0, scaledCanvasWidth, scaledCanvasHeight);
     ctx.beginPath();
     ctx.fillStyle = paddle.color;
-    ctx.roundRect(paddles.left.x, paddles.left.y, paddle.width, paddle.height, 10);
+    ctx.roundRect(paddles.left.x * scaleFactor, // Scaled X position
+    paddles.left.y * scaleFactor, // Scaled Y position
+    paddle.width * scaleFactor, // Scaled Width
+    paddle.height * scaleFactor, // Scaled Height
+    10 * scaleFactor // Scaled Corner Radius (optional)
+    );
     ctx.fill();
     ctx.closePath();
     ctx.beginPath();
     ctx.fillStyle = paddle.color;
-    ctx.roundRect(paddles.right.x, paddles.right.y, paddle.width, paddle.height, 10);
+    ctx.roundRect(paddles.right.x * scaleFactor, // Scaled X position
+    paddles.right.y * scaleFactor, // Scaled Y position
+    paddle.width * scaleFactor, // Scaled Width
+    paddle.height * scaleFactor, // Scaled Height
+    10 * scaleFactor // Scaled Corner Radius (optional)
+    );
     ctx.fill();
     ctx.closePath();
+    ;
     ctx.beginPath();
     ctx.fillStyle = ball.color;
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 3;
-    ctx.arc(ballPos.x, ballPos.y, ball.radius, 0, Math.PI * 2);
+    ctx.lineWidth = 3 * scaleFactor; // Scaled Line Width
+    ctx.arc(ballPos.x * scaleFactor, // Scaled X position
+    ballPos.y * scaleFactor, // Scaled Y position
+    ball.radius * scaleFactor, // Scaled Radius
+    0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.closePath();

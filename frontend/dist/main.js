@@ -1,7 +1,9 @@
 import "./game_soket.js";
 import { initgameSocket, sendMessage, removeMessageListener, addMessageListener } from "./game_soket.js";
 import { cleanupGame, addCleanupListener, setupNavigationHandlers, setupGameListeners, createLocalGameListener, createAIGameListener, createRemoteGameListener, } from "./game_shared.js";
-import { cleanupTournamentMatch, createTournamentListener, setupTournamentGameListeners } from "./tournament.js";
+import { ChatManager } from "./chat/index.js";
+import { createTournamentListener, cleanupTournamentMatch, setupTournamentGameListeners } from "./tournament.js";
+// import { getAllUsers } from "../loadSharedDb.ts";
 console.log("start Pong game");
 let gameid = "";
 let ctx = null;
@@ -15,6 +17,7 @@ class AppRouter {
         this.currentUser = null;
         this.postLoginRedirect = null;
         this.user = { username: "", passworde: "", email: "", avatar: "../images/avatre/1jpg", usernametournament: "", id: 0 };
+        this.chatManager = null;
         this.allpages = [
             "/",
             "home",
@@ -87,7 +90,6 @@ class AppRouter {
                 this.currentUser = usernameFromResp;
             this.setLoggedIn(true);
             initgameSocket();
-            //  initchatSocket();
             const respUser = data.user ?? data;
             if (respUser && typeof respUser === "object") {
                 this.user = {
@@ -169,7 +171,6 @@ class AppRouter {
             this.currentUser = payload.username || null;
             this.setLoggedIn(true);
             initgameSocket();
-            // initchatSocket();
             const storedUserData = localStorage.getItem('user_data');
             if (storedUserData) {
                 try {
@@ -340,7 +341,6 @@ class AppRouter {
                 }
                 body.classList.toggle('sidebar-open');
             };
-            // Add event listeners with null checks
             const toggleButton = document.getElementById('sidebar-toggle');
             const overlay = document.getElementById('sidebar-overlay');
             if (toggleButton) {
@@ -349,7 +349,6 @@ class AppRouter {
             if (overlay) {
                 overlay.addEventListener('click', toggleSidebar);
             }
-            // Close sidebar when clicking nav links (optional)
             const navLinks = document.querySelectorAll('.nav-link');
             navLinks.forEach((link) => {
                 link.addEventListener('click', () => {
@@ -361,7 +360,6 @@ class AppRouter {
         }
         console.log(`📄 Loaded page: ${page}`);
     }
-    // Render the dashboard layout once, then only update content
     renderDashboardLayout() {
         console.log(`user info :`, this.user);
         this.container.innerHTML = `
@@ -428,7 +426,6 @@ class AppRouter {
     </div>
   `;
         this.contentContainer = document.getElementById('dashboard-main-content');
-        // Setup the logout functionality
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', async (e) => {
@@ -436,7 +433,6 @@ class AppRouter {
                 await this.performLogout();
             });
         }
-        // Add event listener to toggle user dropdown menu
         const userMenuToggle = document.getElementById('user-menu-toggle');
         const userDropdown = document.getElementById('user-dropdown');
         if (userMenuToggle && userDropdown) {
@@ -444,7 +440,6 @@ class AppRouter {
                 userDropdown.classList.toggle('show');
             });
         }
-        // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             if (userDropdown && !userDropdown.contains(e.target)) {
                 userDropdown.classList.remove('show');
@@ -547,8 +542,6 @@ class AppRouter {
             init: () => console.log("🏠 Home page loaded"),
         };
     }
-    // Make sure to import { createTournamentGameListener, setupGameListeners, ... } from "./game_shared.js"
-    // ... existing class methods ...
     getTournamentLobbyPage() {
         return {
             title: "Tournament Lobby",
@@ -653,7 +646,6 @@ class AppRouter {
           </div>
         </div>
       `,
-            // ... (init function remains the same) ...
             init: () => {
                 console.log("🏟️ Tournament Lobby Initialized");
                 const tId = localStorage.getItem('activeTournamentId');
@@ -825,7 +817,6 @@ class AppRouter {
                             card.style.cssText = `background: #374151; margin-bottom: 1rem; padding: 1rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #4b5563; transition: transform 0.2s;`;
                             card.onmouseover = () => card.style.transform = "translateX(5px)";
                             card.onmouseout = () => card.style.transform = "translateX(0)";
-                            // Fix player count safely
                             let count = 0;
                             if (t.numPlayers !== undefined)
                                 count = t.numPlayers;
@@ -1023,11 +1014,6 @@ class AppRouter {
             init: () => {
                 console.log("🌐 Remote game page loaded");
                 cleanupGame(this.user.id, false);
-                //   const res = fetch("/api/auth/me", {
-                //   method: "POST",
-                //   headers: { "Content-Type": "application/json" },
-                //   body: JSON.stringify({ username, password }),
-                // });
                 setupNavigationHandlers(this.user.id, "back-button-remote", (path) => this.loadPage(path));
                 const startButton = document.getElementById('start-remote-game');
                 const matchmakingStatus = document.getElementById('matchmaking-status');
@@ -1663,202 +1649,24 @@ class AppRouter {
     getChatPage() {
         return {
             title: "PONG Game - Chat",
-            content: `
-<div class="content-card flex h-[80vh] gap-4">
-
-  <!-- SIDEBAR: USER LIST -->
-  <div class="w-64 bg-gray-900 text-gray-100 rounded-xl p-4 flex flex-col">
-
-    <h2 class="text-xl font-bold mb-4">💬 Chats</h2>
-
-    <!-- Search Bar -->
-    <input
-      id="chat-search"
-      class="w-full p-2 rounded-md bg-gray-800 text-gray-200 mb-3"
-      placeholder="Search user..."
-    />
-
-    <!-- USER LIST -->
-    <div id="chat-user-list" class="flex-1 overflow-y-auto space-y-2">
-
-      <!-- Example user item (dynamic in JS) -->
-      <!--
-      <div class="p-2 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700"
-           data-user-id="546479405">
-        <div class="flex items-center gap-2">
-          <img src="../images/avatars/1.jpg" class="w-10 h-10 rounded-full">
-          <div>
-            <div class="font-semibold">ybahij</div>
-            <div class="text-xs text-gray-400">Online</div>
-          </div>
-        </div>
-      </div>
-      -->
-
-    </div>
-
-  </div>
-
-  <!-- MAIN CHAT WINDOW -->
-  <div class="flex-1 bg-white rounded-xl p-4 flex flex-col">
-
-    <!-- Chat Header -->
-    <div id="chat-header" class="flex items-center justify-between mb-4 border-b pb-3 hidden">
-      <div class="flex items-center gap-3">
-        <img id="chat-user-avatar" class="w-12 h-12 rounded-full" src="">
-        <div>
-          <div id="chat-username" class="text-lg font-semibold"></div>
-          <button id="chat-view-profile" class="text-sm text-blue-600 hover:underline">
-            View Profile
-          </button>
-        </div>
-      </div>
-
-      <div class="flex gap-2">
-        <button id="chat-block-btn" class="px-3 py-1 bg-red-500 text-white rounded-md text-sm">
-          Block
-        </button>
-
-        <button id="chat-invite-btn" class="px-3 py-1 bg-green-600 text-white rounded-md text-sm">
-          Invite to Game
-        </button>
-      </div>
-    </div>
-
-    <!-- Chat Messages Area -->
-    <div id="chat-messages"
-         class="flex-1 overflow-y-auto bg-gray-100 p-4 rounded-md space-y-3">
-    </div>
-
-    <!-- Message Input -->
-    <div id="chat-message-box" class="flex gap-2 mt-4 hidden">
-      <input id="chat-input"
-             class="flex-1 p-3 rounded-md border"
-             placeholder="Type your message..."/>
-      <button id="chat-send"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md">
-        Send
-      </button>
-    </div>
-
-  </div>
-</div>
-
-    `,
+            content: `<div id="chat-app-container"></div>`,
             init: () => {
-                //   console.log("💬 Chat page loaded");
-                //   // Initialize WebSocket only ONCE
-                //   const socket = initchatSocket();
-                //   // UI references
-                //   const userList = document.getElementById("chat-user-list")!;
-                //   const chatHeader = document.getElementById("chat-header")!;
-                //   const messageBox = document.getElementById("chat-messages")!;
-                //   const chatInput = document.getElementById("chat-input")! as HTMLInputElement;
-                //   const sendBtn = document.getElementById("chat-send")!;
-                //   const messageSection = document.getElementById("chat-message-box")!;
-                //   const usernameLabel = document.getElementById("chat-username")!;
-                //   const avatarImg = document.getElementById("chat-user-avatar")! as HTMLImageElement;
-                //   let currentChatUser: any = null; // Active DM target
-                //   // -------------------------------------------------------
-                //   // 1️⃣ FETCH USER LIST (from your backend /api/users/all)
-                //   // -------------------------------------------------------
-                //   fetch("/api/users/all", {
-                //     headers: { Authorization: `Bearer ${localStorage.getItem("jwt_token")}` },
-                //   })
-                //     .then(res => res.json())
-                //     .then(users => {
-                //       userList.innerHTML = "";
-                //       console.log('users:', users);
-                //       console.log('Is array?', Array.isArray(users));
-                //       users.forEach((user: any) => {
-                //         if (user.id === JSON.parse(localStorage.getItem("user")!).id) return; // skip self
-                //         const div = document.createElement("div");
-                //         div.className = "p-2 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-700";
-                //         div.dataset.userId = user.id;
-                //         div.innerHTML = `
-                //           <div class="flex items-center gap-2">
-                //             <img src="${user.avatar}" class="w-10 h-10 rounded-full" />
-                //             <div>
-                //               <div class="font-semibold">${user.username}</div>
-                //               <div class="text-xs text-gray-400">Online</div>
-                //             </div>
-                //           </div>
-                //         `;
-                //         // Click to open DM
-                //         div.onclick = () => {
-                //           currentChatUser = user;
-                //           // update header UI
-                //           chatHeader.classList.remove("hidden");
-                //           messageSection.classList.remove("hidden");
-                //           usernameLabel.textContent = user.username;
-                //           avatarImg.src = user.avatar;
-                //           // clear chat display & load conversation
-                //           messageBox.innerHTML = "";
-                //           loadConversation(user.id);
-                //         };
-                //         userList.appendChild(div);
-                //       });
-                //     });
-                //   // -------------------------------------------------------
-                //   // 2️⃣ SEND MESSAGE
-                //   // -------------------------------------------------------
-                //   sendBtn.onclick = () => {
-                //     if (!chatInput.value.trim() || !currentChatUser) return;
-                //     const message = {
-                //       type: "dm",
-                //       to: currentChatUser.id,
-                //       message: chatInput.value,
-                //     };
-                //     socket.send(JSON.stringify(message));
-                //     // Add my own message to UI
-                //     appendMessage("me", chatInput.value);
-                //     chatInput.value = "";
-                //   };
-                //   // -------------------------------------------------------
-                //   // 3️⃣ RECEIVE MESSAGE
-                //   // -------------------------------------------------------
-                //   onChatMessage((msg) => {
-                //     if (msg.type === "dm") {
-                //       // only show messages from the currently opened chat
-                //       if (!currentChatUser || msg.from !== currentChatUser.id) return;
-                //       appendMessage("them", msg.message);
-                //     }
-                //   });
-                //   // -------------------------------------------------------
-                //   // Helper: Append Message to UI
-                //   // -------------------------------------------------------
-                //   function appendMessage(sender: "me" | "them", text: string) {
-                //     const bubble = document.createElement("div");
-                //     bubble.className =
-                //       sender === "me"
-                //         ? "text-right"
-                //         : "text-left";
-                //     bubble.innerHTML = `
-                //       <div class="inline-block px-3 py-2 rounded-lg mb-1 ${
-                //         sender === 'me'
-                //           ? 'bg-blue-600 text-white'
-                //           : 'bg-gray-300 text-black'
-                //       }">
-                //         ${text}
-                //       </div>
-                //     `;
-                //     messageBox.appendChild(bubble);
-                //     messageBox.scrollTop = messageBox.scrollHeight;
-                //   }
-                //   // -------------------------------------------------------
-                //   // Load conversation history (optional)
-                //   // -------------------------------------------------------
-                //   function loadConversation(userId: number) {
-                //     fetch(`/api/chat/history/${userId}`, {
-                //       headers: { Authorization: `Bearer ${localStorage.getItem("jwt_token")}` },
-                //     })
-                //       .then(res => res.json())
-                //       .then(messages => {
-                //         messages.forEach((msg: any) => {
-                //           appendMessage(msg.fromMe ? "me" : "them", msg.message);
-                //         });
-                //       });
-                //   }
+                console.log("💬 Chat page loaded");
+                // Cleanup previous chat instance if exists
+                if (this.chatManager) {
+                    this.chatManager.destroy();
+                    this.chatManager = null;
+                }
+                // Initialize new chat manager
+                this.chatManager = new ChatManager('chat-app-container');
+                this.chatManager.init({
+                    id: this.user.id,
+                    username: this.user.username,
+                    email: this.user.email,
+                    avatar: this.user.avatar
+                }).catch(err => {
+                    console.error('Failed to initialize chat:', err);
+                });
             }
         };
     }
@@ -1909,9 +1717,6 @@ class AppRouter {
         };
     }
 }
-// ==========================
-// Initialize App
-// ==========================
 document.addEventListener("DOMContentLoaded", () => {
     new AppRouter("app-container");
 });

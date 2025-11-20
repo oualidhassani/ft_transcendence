@@ -16,6 +16,7 @@ RUN npx tsc
 RUN npx tailwindcss -c tailwind.config.js -i ./src/styles/tailwind.css -o ./dist/styles/tailwind.css --minify
 
 
+
 # -------- NGINX Stage --------
 # -------- NGINX Stage --------
 FROM nginx:alpine
