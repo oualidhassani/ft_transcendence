@@ -332,6 +332,45 @@ export function handleGameConfig(msg, userId, startButtonId, isAI = false, isRem
             y: msg.payload.ball.y,
         },
     };
+    console.log("paddles: ", gameState.paddles);
+    const rid = gameState.paddles.right.playerId;
+    const lid = gameState.paddles.left.playerId;
+    const rImg = document.getElementById("r-palyer");
+    const rName = document.getElementById("r-name");
+    const lImg = document.getElementById("opponent-avatar");
+    const lName = document.getElementById("opponent-name");
+    if (String(userId) != String(lid)) {
+        console.log(`lifte user [${userId}] name [${lName}]`);
+        if (rImg && lImg) {
+            const tmpSrc = lImg.src;
+            const tmpAlt = lImg.alt;
+            const tmpClass = lImg.className;
+            const tmpOpacity = lImg.style.opacity;
+            const tmpBorder = lImg.style.borderColor;
+            lImg.src = rImg.src;
+            lImg.alt = rImg.alt;
+            lImg.className = rImg.className;
+            lImg.style.opacity = rImg.style.opacity;
+            lImg.style.borderColor = rImg.style.borderColor;
+            rImg.src = tmpSrc;
+            rImg.alt = tmpAlt;
+            rImg.className = tmpClass;
+            rImg.style.opacity = tmpOpacity;
+            rImg.style.borderColor = tmpBorder;
+        }
+        if (rName && lName) {
+            // swap text and basic styling
+            const tmpText = lName.textContent;
+            const tmpClass = lName.className;
+            const tmpColor = lName.style.color;
+            lName.textContent = rName.textContent;
+            lName.className = rName.className;
+            lName.style.color = rName.style.color;
+            rName.textContent = tmpText;
+            rName.className = tmpClass;
+            rName.style.color = tmpColor;
+        }
+    }
     gameid = msg.payload.gameId;
     console.log(`🎮 Game ID: ${msg.payload.gameId}${isAI ? ' (AI Mode)' : isRemote ? ' (Remote Mode)' : ''}`);
     const container = document.getElementById("game-container");
@@ -438,6 +477,7 @@ export function createRemoteGameListener(userId) {
         if (!msg)
             return;
         console.log("🌐 Remote game message:", msg.type, msg.payload);
+        let data = null;
         if (msg.type === "join_random_ack") {
             const startBtn = document.getElementById("start-remote-game");
             if (startBtn) {
@@ -452,19 +492,54 @@ export function createRemoteGameListener(userId) {
                 opponentImg.style.opacity = "0.5";
             }
         }
-        else if (msg.type === "match_found") {
+        else if (msg.type === "random_opponent_found") {
             console.log("🎮 Match found!", msg.payload);
-            const opponentInfo = msg.payload.opponent;
+            const id1 = msg.payload.player1;
+            const id2 = msg.payload.player2;
             const opponentImg = document.getElementById("opponent-avatar");
             const opponentName = document.getElementById("opponent-name");
-            if (opponentImg && opponentInfo?.avatar) {
-                opponentImg.src = opponentInfo.avatar;
-                opponentImg.style.opacity = "1";
-                opponentImg.style.borderColor = "#10b981";
+            const serchstate = document.getElementById("serch");
+            if (serchstate) {
+                serchstate.innerHTML = "● Online";
+                serchstate.style.color = "#10b981";
             }
-            if (opponentName && opponentInfo?.username) {
-                opponentName.textContent = opponentInfo.username;
-                opponentName.style.color = "#e5e7eb";
+            if (String(userId) === String(id1)) {
+                fetchUserDetails(id2)
+                    .then(res => {
+                    if (!res) {
+                        console.error("failed to get user data by id");
+                        return;
+                    }
+                    if (opponentImg) {
+                        opponentImg.src = res.avatar;
+                        opponentImg.style.opacity = "1";
+                        opponentImg.style.borderColor = "#10b981";
+                    }
+                    if (opponentName) {
+                        opponentName.textContent = res.username;
+                        opponentName.style.color = "#e5e7eb";
+                    }
+                })
+                    .catch(e => console.error(e));
+            }
+            else {
+                fetchUserDetails(id1)
+                    .then(res => {
+                    if (!res) {
+                        console.error("failed to get user data by id");
+                        return;
+                    }
+                    if (opponentImg) {
+                        opponentImg.src = res.avatar;
+                        opponentImg.style.opacity = "1";
+                        opponentImg.style.borderColor = "#10b981";
+                    }
+                    if (opponentName) {
+                        opponentName.textContent = res.username;
+                        opponentName.style.color = "#e5e7eb";
+                    }
+                })
+                    .catch(e => console.error(e));
             }
             const startBtn = document.getElementById("start-remote-game");
             if (startBtn)

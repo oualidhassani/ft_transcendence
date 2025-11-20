@@ -7,7 +7,7 @@ import { AuthError, verifyPassword } from "./registered_users.js";
 import { updateUserHandler, type UpdateUserBody } from './user_update.js';
 import { validateUsername, validateEmail, validatePassword, ValidationError, hashPassword } from './loadSharedDb.js';
 
-const DEFAULT_AVATAR_REL = '../images/avatrs/1.jpg.jpg';
+const DEFAULT_AVATAR_REL = '../images/avatrs/1.jpg';
 // Instantiate Prisma client (singleton per module)
 // const prisma = new PrismaClient();
 
