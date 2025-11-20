@@ -7,7 +7,7 @@ import { AuthError, verifyPassword } from "./registered_users.js";
 import { updateUserHandler, type UpdateUserBody } from './user_update.js';
 import { validateUsername, validateEmail, validatePassword, ValidationError, hashPassword } from './loadSharedDb.js';
 
-const DEFAULT_AVATAR_REL = 'avatar/default_avatar/default_avatar.jpg';
+const DEFAULT_AVATAR_REL = '../images/avatrs/1.jpg.jpg';
 // Instantiate Prisma client (singleton per module)
 // const prisma = new PrismaClient();
 
@@ -15,11 +15,11 @@ interface RegisterBody { username: string; email: string; password: string; avat
 interface LoginBody { username: string; email: string; password: string }
 
 
-export function registerControllers(app: FastifyInstance) 
+export function registerControllers(app: FastifyInstance)
 {
   const randomUserId = () => crypto.randomInt(1, 2147483647);
 
-  app.post("/register", async (request: FastifyRequest<{ Body: RegisterBody }>, reply: FastifyReply) => { 
+  app.post("/register", async (request: FastifyRequest<{ Body: RegisterBody }>, reply: FastifyReply) => {
     const { username, email, password, avatar = null } = request.body;
     try {
       validateUsername(username);
@@ -38,10 +38,10 @@ export function registerControllers(app: FastifyInstance)
 
       // Check existing user/email (explicit for user-friendly messages)
       const existingUser = await prisma.user.findUnique({ where: { username } });
-      if (existingUser)  
+      if (existingUser)
         throw new ValidationError('Username already exists');
       const existingEmail = await prisma.user.findUnique({ where: { email } });
-      if (existingEmail) 
+      if (existingEmail)
         throw new ValidationError('Email already exists');
       const existingTournament = await prisma.user.findUnique({ where: { usernameTournament: tUsername } });
       if (existingTournament)
@@ -52,7 +52,7 @@ export function registerControllers(app: FastifyInstance)
       const avatarValue = (typeof avatar === 'string' && avatar.trim() !== '')
         ? avatar
         : DEFAULT_AVATAR_REL;
-        
+
       // Create user with random integer ID, retry on rare ID collision
       let user: { id: number; username: string; email: string; avatar: string | null; created_at: Date };
       for (let attempt = 0; ; attempt++) {
@@ -71,19 +71,19 @@ export function registerControllers(app: FastifyInstance)
           throw err;
         }
       }
-      
+
       request.log.info({ userId: user.id }, 'New user created');
       return reply.send({ message: 'User registered successfully', user });
     } catch (err: any) {
-      if (err?.name === 'ValidationError') 
+      if (err?.name === 'ValidationError')
         return reply.status(400).send({ error: err.message });
       // Prisma unique constraint
-      if (err?.code === 'P2002') 
+      if (err?.code === 'P2002')
       {
         const field = err.meta?.target?.[0];
-        if (field === 'username')  
+        if (field === 'username')
           return reply.status(400).send({ error: 'Username already exists' });
-        if (field === 'email') 
+        if (field === 'email')
           return reply.status(400).send({ error: 'Email already exists' });
       }
       request.log.error({ err }, 'Register error');
@@ -94,25 +94,25 @@ export function registerControllers(app: FastifyInstance)
   app.post("/login", async (request: FastifyRequest<{ Body: LoginBody }>, reply: FastifyReply) => {
     try {
       const { username, email, password } = request.body;
-      if ((!username && !email) || !password) 
+      if ((!username && !email) || !password)
         throw new AuthError('Invalid credentials');
 
       let user = null as any;
-      if (username) 
+      if (username)
       {
         user = await prisma.user.findUnique({ where: { username } });
-        if (!user) 
-          throw new AuthError('Invalid username');  
-      } 
-      else if (email) 
+        if (!user)
+          throw new AuthError('Invalid username');
+      }
+      else if (email)
       {
         user = await prisma.user.findUnique({ where: { email } });
-        if (!user) 
-          throw new AuthError('Invalid email');  
+        if (!user)
+          throw new AuthError('Invalid email');
       }
 
       const isValid = await verifyPassword(user.password, password);
-      if (!isValid) 
+      if (!isValid)
         throw new AuthError('Invalid password');
 
       // Ensure avatar present (fallback to default)
@@ -149,7 +149,7 @@ export function registerControllers(app: FastifyInstance)
         },
       });
     } catch (err: any) {
-      if (err instanceof AuthError) 
+      if (err instanceof AuthError)
         return reply.status(err.status).send({ error: err.message });
       request.log.error({ err }, 'Login error');
       return reply.code(500).send({ error: 'Login failed' });
@@ -161,7 +161,7 @@ export function registerControllers(app: FastifyInstance)
     try {
       // Verify JWT token
       const decoded = await request.jwtVerify() as any;
-      
+
       // Fetch user from database
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
@@ -177,7 +177,7 @@ export function registerControllers(app: FastifyInstance)
         }
       });
 
-      if (!user) 
+      if (!user)
         return reply.status(404).send({ error: 'User not found' });
 
       // Ensure avatar has a value
@@ -207,9 +207,9 @@ export function registerControllers(app: FastifyInstance)
   app.get("/user/:id", async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
     try {
       const userId = parseInt(request.params.id, 10);
-      
+
       // Validate ID
-      if (isNaN(userId) || userId <= 0) 
+      if (isNaN(userId) || userId <= 0)
         return reply.status(400).send({ error: 'Invalid user ID' });
 
       const user = await prisma.user.findUnique({
@@ -224,7 +224,7 @@ export function registerControllers(app: FastifyInstance)
         }
       });
 
-      if (!user) 
+      if (!user)
         return reply.status(404).send({ error: 'User not found' });
 
       // Ensure avatar has a value

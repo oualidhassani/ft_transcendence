@@ -634,7 +634,11 @@ private getHomePage(): Page {
     init: () => console.log("🏠 Home page loaded"),
   };
 }
-private getTournamentLobbyPage(): Page {
+
+
+// Make sure to import { createTournamentGameListener, setupGameListeners, ... } from "./game_shared.js"
+
+  private getTournamentLobbyPage(): Page {
     return {
       title: "Tournament Lobby",
       content: `
@@ -666,11 +670,11 @@ private getTournamentLobbyPage(): Page {
               <div class="lobby-sidebar">
                 <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-4 shrink-0">
                   <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                    👥 <span class="text-gray-200">Players List</span>
+                    👥 <span class="text-gray-200">Bracket & Status</span>
                   </h3>
                   <div id="lobby-status" class="lobby-status-badge">Loading...</div>
                 </div>
-                <!-- This container will now always have 4 items -->
+                <!-- This container gets populated by the listener -->
                 <div id="bracket-container" class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar"></div>
               </div>
 
@@ -725,112 +729,29 @@ private getTournamentLobbyPage(): Page {
         cleanupGame(this.user.id, false);
 
         // Elements
-        const statusEl = document.getElementById("lobby-status")!;
-        const bracketEl = document.getElementById("bracket-container")!;
-        const waitingScreen = document.getElementById("lobby-waiting-screen")!;
-        const gameScreen = document.getElementById("lobby-game-screen")!;
         const playerCountEl = document.getElementById("player-count-display")!;
         const leaveBtn = document.getElementById("leave-tournament-btn")!;
+        const bracketEl = document.getElementById("bracket-container")!;
 
-        // --- Helper: Resolve User Details ---
-        const resolveUser = async (pid: string | number) => {
-          // Fix: Convert ID to String immediately
-          const pidStr = String(pid);
-
-          const defaultData = {
-            name: `Player ${pidStr.substring(0, 4)}`,
-            avatar: '../images/avatars/unknown.jpg'
-          };
-
-          if (pidStr === String(this.user.id)) {
-            return {
-              name: `${this.user.username} (You)`,
-              avatar: this.user.avatar || '../images/avatars/1.jpg'
-            };
-          }
-
-          try {
-            const res = await fetch(`/api/auth/user/${pidStr}`, {
-              headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
-            });
-            if(res.ok) {
-              const data = await res.json();
-              return {
-                name: data.username,
-                avatar: data.avatar || '../images/avatars/unknown.jpg'
-              };
-            }
-            return defaultData;
-          } catch { return defaultData; }
-        };
-
-        // --- Helper: Create Match Card HTML ---
-        const createMatchHTML = (p1: any, p2: any, label: string) => `
-           <div class="bracket-section-title">${label}</div>
-           <div class="match-card">
-             <div class="match-player">
-               <div class="flex items-center gap-2">
-                 <img src="${p1.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/unknown.jpg'">
-                 <span class="truncate w-24">${p1.name}</span>
-               </div>
-             </div>
-             <div class="match-divider"></div>
-             <div class="match-player">
-               <div class="flex items-center gap-2">
-                 <img src="${p2.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/unknown.jpg'">
-                 <span class="truncate w-24">${p2.name}</span>
-               </div>
-             </div>
-             <div class="match-vs">VS</div>
-           </div>
-        `;
-
-        const renderSemiFinals = async (payload: any) => {
-           statusEl.innerText = "Semi-Finals";
-           statusEl.className = "lobby-status-badge bg-blue-500/10 text-blue-400 border-blue-500/20";
-
-           const [u1, u2, u3, u4] = await Promise.all([
-             resolveUser(payload.semi1.players[0]),
-             resolveUser(payload.semi1.players[1]),
-             resolveUser(payload.semi2.players[0]),
-             resolveUser(payload.semi2.players[1])
-           ]);
-
-           bracketEl.innerHTML =
-             createMatchHTML(u1, u2, "Semi-Final 1") +
-             createMatchHTML(u3, u4, "Semi-Final 2");
-        };
-
-        const renderFinal = async (payload: any) => {
-           statusEl.innerText = "Grand Final";
-           statusEl.className = "lobby-status-badge bg-yellow-500/10 text-yellow-400 border-yellow-500/20 animate-pulse";
-
-           const [u1, u2] = await Promise.all([
-             resolveUser(payload.final.players[0]),
-             resolveUser(payload.final.players[1])
-           ]);
-
-           const finalHTML = createMatchHTML(u1, u2, "⭐ Grand Final ⭐");
-
-           if(!bracketEl.innerHTML.includes("Semi-Final")) {
-              bracketEl.innerHTML = finalHTML;
-           } else {
-              bracketEl.innerHTML += finalHTML;
-           }
-        };
-
+        // --- Helper: Update Lobby List (Pre-Game) ---
         const updateLobbyUI = async (playerIds: any[]) => {
           playerCountEl.innerText = `${playerIds.length} / 4 Joined`;
-
           const totalSlots = 4;
           const slots = Array.from({ length: totalSlots }, (_, i) => i);
 
           const slotPromises = slots.map(async (index) => {
              if (index < playerIds.length) {
-                 const user = await resolveUser(playerIds[index]);
-                 return { ...user, isEmpty: false };
+                 // Use shared fetchUserDetails
+                 const pidStr = String(playerIds[index]);
+                 const isMe = pidStr === String(this.user.id);
+                 let user = { name: `Player ${pidStr.substr(0,4)}`, avatar: '../images/avatars/unknown.jpg', isMe, isEmpty: false };
+
+                 const data = await fetchUserDetails(pidStr);
+                 if (data) { user.name = data.username; user.avatar = data.avatar || user.avatar; }
+                 if (isMe) user.name += " (You)";
+                 return user;
              } else {
-                 return { name: "Waiting...", avatar: null, isEmpty: true };
+                 return { name: "Waiting...", avatar: null, isMe: false, isEmpty: true };
              }
           });
 
@@ -841,15 +762,16 @@ private getTournamentLobbyPage(): Page {
               <div class="bracket-box flex items-center gap-3 p-2 ${p.isEmpty ? 'opacity-50 border-dashed border-gray-600' : ''}">
                   ${p.isEmpty
                     ? `<div class="w-8 h-8 rounded-full bg-gray-800/50 flex items-center justify-center text-xs text-gray-500 border border-gray-600">?</div>`
-                    : `<img src="${p.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/unknown.jpg'">`
+                    : `<img src="${p.avatar}" class="avatar-sm ${p.isMe ? 'border-2 border-yellow-400' : ''}" onerror="this.src='../images/avatars/unknown.jpg'">`
                   }
-                  <span class="${p.isEmpty ? 'text-gray-500 italic text-sm' : 'text-gray-200 font-medium truncate'}">
+                  <span class="${p.isEmpty ? 'text-gray-500 italic text-sm' : 'text-gray-200 font-medium truncate'} ${p.isMe ? 'text-yellow-400 font-bold' : ''}">
                     ${p.name}
                   </span>
               </div>`
           ).join('');
         };
 
+        // --- Logic: Fetch & Verify ---
         const refreshLobbyData = async () => {
             try {
               const res = await fetch(`/tournaments/tournaments/${tournamentId}`, {
@@ -914,45 +836,21 @@ private getTournamentLobbyPage(): Page {
           leaveBtn.onclick = handleLeave;
           addCleanupListener(() => leaveBtn.onclick = null);
 
-          const lobbyListener = (msg: any) => {
-            if (msg.type === "game_config") {
-              statusEl.innerText = "Live Match";
-              statusEl.className = "lobby-status-badge bg-red-500/10 text-red-400 border-red-500/20 animate-pulse";
-              waitingScreen.style.display = "none";
-              gameScreen.style.display = "block";
-              handleGameConfig(msg, this.user.id, "hidden-start-btn", false, true);
-              setTimeout(() => sendMessage("player_ready", { gameId: msg.payload.gameId, playerId: this.user.id.toString() }), 1000);
-              return;
-            }
+          // ✅ Use the new Shared Listener
+          const lobbyListener = createTournamentGameListener(this.user.id, tournamentId, (path) => this.loadPage(path));
 
-            switch (msg.type) {
-              case "tournament_player-joined":
-              case "tournament_player-left":
+          // We still need to listen for player joins separately to update the WAITING list
+          // The shared listener handles bracket updates, but the waiting list logic is specific to this page's init
+          const comboListener = (msg: any) => {
+             lobbyListener(msg); // Run the shared logic (Bracket, Game Start)
+
+             // Run local logic (Updating the waiting list count)
+             if (msg.type === "tournament_player-joined" || msg.type === "tournament_player-left") {
                 if (msg.payload.tournamentId === tournamentId) refreshLobbyData();
-                break;
-
-              case "tournament_semi-finals":
-                renderSemiFinals(msg.payload);
-                break;
-
-              case "tournament_final":
-                renderFinal(msg.payload);
-                cleanupGame(this.user.id, false);
-                waitingScreen.style.display = "flex";
-                gameScreen.style.display = "none";
-                break;
-
-              case "tournament_finish":
-                statusEl.innerText = "Finished";
-                sessionStorage.removeItem('inTournamentLobby');
-                localStorage.removeItem('activeTournamentId');
-                alert(`🏆 Tournament Winner: ${msg.payload.winner}`);
-                setTimeout(() => this.navigateTo("dashboard/game/tournament"), 2000);
-                break;
-            }
+             }
           };
 
-          setupGameListeners(lobbyListener, 'tournament-score', this.user.id, (path) => this.loadPage(path), false, true);
+          setupGameListeners(comboListener, 'tournament-score', this.user.id, (path) => this.loadPage(path), false, true);
         };
 
         verifyAndInitialize();
@@ -960,6 +858,7 @@ private getTournamentLobbyPage(): Page {
     };
   }
 
+  
 private gettournamentpage(): Page {
   return {
     title: "PONG Game - Tournament",
@@ -1337,7 +1236,7 @@ private getremotepage(): Page {
 
           <!-- Player 2 (Opponent) -->
           <div style="text-align:center; width:180px;">
-            <img id="opponent-avatar" src="../images/avatars/unknown.jpg" alt="Opponent" style="width:120px;height:120px;border-radius:50%;border:4px solid #6b7280;opacity:0.5;box-shadow:0 4px 12px rgba(107,114,128,0.3);" onerror="this.src='../images/avatars/2.jpg'">
+            <img id="opponent-avatar" src="../images/avatars/1.jpg" alt="Opponent" style="width:120px;height:120px;border-radius:50%;border:4px solid #6b7280;opacity:0.5;box-shadow:0 4px 12px rgba(107,114,128,0.3);" onerror="this.src='../images/avatars/2.jpg'">
             <div id="opponent-name" style="margin-top:1rem; font-weight:700; font-size:1.1rem; color:#9ca3af;">Waiting...</div>
             <div style="font-size:0.875rem; color:#6b7280; margin-top:0.25rem;">Searching...</div>
           </div>

@@ -648,7 +648,7 @@ class AppRouter {
                     const pidStr = String(pid);
                     const defaultData = {
                         name: `Player ${pidStr.substring(0, 4)}`,
-                        avatar: '../images/avatars/unknown.jpg'
+                        avatar: '../images/avatars/1.jpg'
                     };
                     if (pidStr === String(this.user.id)) {
                         return {
@@ -664,7 +664,7 @@ class AppRouter {
                             const data = await res.json();
                             return {
                                 name: data.username,
-                                avatar: data.avatar || '../images/avatars/unknown.jpg'
+                                avatar: data.avatar || '../images/avatars/1.jpg'
                             };
                         }
                         return defaultData;
@@ -679,21 +679,20 @@ class AppRouter {
            <div class="match-card">
              <div class="match-player">
                <div class="flex items-center gap-2">
-                 <img src="${p1.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/unknown.jpg'">
+                 <img src="${p1.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/1.jpg'">
                  <span class="truncate w-24">${p1.name}</span>
                </div>
              </div>
              <div class="match-divider"></div>
              <div class="match-player">
                <div class="flex items-center gap-2">
-                 <img src="${p2.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/unknown.jpg'">
+                 <img src="${p2.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/1.jpg'">
                  <span class="truncate w-24">${p2.name}</span>
                </div>
              </div>
              <div class="match-vs">VS</div>
            </div>
         `;
-                // --- Helper: Render Semi-Finals ---
                 const renderSemiFinals = async (payload) => {
                     statusEl.innerText = "Semi-Finals";
                     statusEl.className = "lobby-status-badge bg-blue-500/10 text-blue-400 border-blue-500/20";
@@ -707,7 +706,6 @@ class AppRouter {
                         createMatchHTML(u1, u2, "Semi-Final 1") +
                             createMatchHTML(u3, u4, "Semi-Final 2");
                 };
-                // --- Helper: Render Final ---
                 const renderFinal = async (payload) => {
                     statusEl.innerText = "Grand Final";
                     statusEl.className = "lobby-status-badge bg-yellow-500/10 text-yellow-400 border-yellow-500/20 animate-pulse";
@@ -723,19 +721,16 @@ class AppRouter {
                         bracketEl.innerHTML += finalHTML;
                     }
                 };
-                // --- Update Waiting List (Fixed 4 Slots & Types) ---
                 const updateLobbyUI = async (playerIds) => {
                     playerCountEl.innerText = `${playerIds.length} / 4 Joined`;
                     const totalSlots = 4;
                     const slots = Array.from({ length: totalSlots }, (_, i) => i);
                     const slotPromises = slots.map(async (index) => {
                         if (index < playerIds.length) {
-                            // Slot Filled: Resolve user and add isEmpty: false
                             const user = await resolveUser(playerIds[index]);
-                            return { ...user, isEmpty: false }; // ✅ FIX: Explicit false
+                            return { ...user, isEmpty: false };
                         }
                         else {
-                            // Slot Empty: Explicit true
                             return { name: "Waiting...", avatar: null, isEmpty: true };
                         }
                     });
@@ -745,7 +740,7 @@ class AppRouter {
               <div class="bracket-box flex items-center gap-3 p-2 ${p.isEmpty ? 'opacity-50 border-dashed border-gray-600' : ''}">
                   ${p.isEmpty
                             ? `<div class="w-8 h-8 rounded-full bg-gray-800/50 flex items-center justify-center text-xs text-gray-500 border border-gray-600">?</div>`
-                            : `<img src="${p.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/unknown.jpg'">`}
+                            : `<img src="${p.avatar}" class="avatar-sm" onerror="this.src='../images/avatars/1.jpg'">`}
                   <span class="${p.isEmpty ? 'text-gray-500 italic text-sm' : 'text-gray-200 font-medium truncate'}">
                     ${p.name}
                   </span>
@@ -758,6 +753,7 @@ class AppRouter {
                         });
                         if (res.ok) {
                             const data = await res.json();
+                            console.log("data: ", data);
                             updateLobbyUI(data.players || []);
                         }
                     }
@@ -973,11 +969,8 @@ class AppRouter {
     `,
             init: () => {
                 console.log("🏆 Tournament Selection page loaded");
-                // 1. Cleanup previous games/listeners
                 cleanupGame(this.user.id, false);
-                // 2. Setup Navigation (Back Button)
                 setupNavigationHandlers(this.user.id, "back-button-tournament", (path) => this.loadPage(path));
-                // --- DOM Elements ---
                 const titleInput = document.getElementById("tournament-title-input");
                 const createBtn = document.getElementById("create-tournament-btn");
                 const refreshBtn = document.getElementById("refresh-tournaments-btn");
@@ -985,15 +978,12 @@ class AppRouter {
                 const loadingState = document.getElementById("tournaments-loading");
                 const emptyState = document.getElementById("tournaments-empty");
                 const listWrapper = document.getElementById("tournaments-list");
-                // --- HELPER: Fetch and Render Tournaments ---
                 const fetchTournaments = async () => {
                     try {
-                        // Show loading, hide others
                         loadingState.style.display = "block";
                         emptyState.style.display = "none";
                         listContainer.innerHTML = "";
                         const token = localStorage.getItem('jwt_token');
-                        // ✅ Fetch from Nginx Proxy (GET /tournaments)
                         const response = await fetch('/tournaments/tournaments', {
                             method: 'GET',
                             headers: {
@@ -1004,14 +994,11 @@ class AppRouter {
                         if (!response.ok)
                             throw new Error("Failed to fetch tournaments");
                         const tournaments = await response.json();
-                        // Hide loading
                         loadingState.style.display = "none";
-                        // Handle Empty List
                         if (tournaments.length === 0) {
                             emptyState.style.display = "block";
                             return;
                         }
-                        // Render List
                         tournaments.forEach((t) => {
                             const card = document.createElement("div");
                             card.style.cssText = `
@@ -1231,7 +1218,7 @@ class AppRouter {
 
           <!-- Player 2 (Opponent) -->
           <div style="text-align:center; width:180px;">
-            <img id="opponent-avatar" src="../images/avatars/unknown.jpg" alt="Opponent" style="width:120px;height:120px;border-radius:50%;border:4px solid #6b7280;opacity:0.5;box-shadow:0 4px 12px rgba(107,114,128,0.3);" onerror="this.src='../images/avatars/2.jpg'">
+            <img id="opponent-avatar" src="../images/avatars/1.jpg" alt="Opponent" style="width:120px;height:120px;border-radius:50%;border:4px solid #6b7280;opacity:0.5;box-shadow:0 4px 12px rgba(107,114,128,0.3);" onerror="this.src='../images/avatars/2.jpg'">
             <div id="opponent-name" style="margin-top:1rem; font-weight:700; font-size:1.1rem; color:#9ca3af;">Waiting...</div>
             <div style="font-size:0.875rem; color:#6b7280; margin-top:0.25rem;">Searching...</div>
           </div>

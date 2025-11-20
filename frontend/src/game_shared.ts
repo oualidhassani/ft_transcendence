@@ -682,3 +682,108 @@ export async function fetchUserDetails(userId: string | number): Promise<any> {
     return null;
   }
 }
+
+// --- ✅ NEW: Tournament Listener & Logic ---
+
+export function createTournamentGameListener(userId: number, tournamentId: string, navigateCallback: (path: string) => void): (msg: any) => void {
+
+  // Helper: Resolve User for Bracket (Adds isMe flag)
+  const resolveUser = async (pid: string) => {
+    const pidStr = String(pid);
+    const isMe = pidStr === String(userId);
+
+    // Default fallback
+    let user = { name: `Player ${pidStr.substr(0,4)}`, avatar: '../images/avatars/unknown.jpg', isMe };
+
+    // Try fetch
+    const data = await fetchUserDetails(pidStr);
+    if (data) {
+      user.name = data.username;
+      user.avatar = data.avatar || user.avatar;
+    }
+    if (isMe) user.name += " (You)";
+
+    return user;
+  };
+
+  // Helper: Generate Match HTML
+  const createMatchHTML = (p1: any, p2: any, label: string) => `
+     <div class="bracket-section-title">${label}</div>
+     <div class="match-card">
+       <div class="match-player ${p1.isMe ? 'text-yellow-400' : ''}">
+         <div class="flex items-center gap-2">
+           <img src="${p1.avatar}" class="avatar-sm ${p1.isMe ? 'border-2 border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.4)]' : ''}" onerror="this.src='../images/avatars/unknown.jpg'">
+           <span class="truncate w-24">${p1.name}</span>
+         </div>
+       </div>
+       <div class="match-divider"></div>
+       <div class="match-player ${p2.isMe ? 'text-yellow-400' : ''}">
+         <div class="flex items-center gap-2">
+           <img src="${p2.avatar}" class="avatar-sm ${p2.isMe ? 'border-2 border-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.4)]' : ''}" onerror="this.src='../images/avatars/unknown.jpg'">
+           <span class="truncate w-24">${p2.name}</span>
+         </div>
+       </div>
+       <div class="match-vs">VS</div>
+     </div>
+  `;
+
+  return (msg: any) => {
+    const statusEl = document.getElementById("lobby-status");
+    const bracketEl = document.getElementById("bracket-container");
+    const waitingScreen = document.getElementById("lobby-waiting-screen");
+    const gameScreen = document.getElementById("lobby-game-screen");
+
+    if (msg.type === "game_config") {
+      if(statusEl) {
+        statusEl.innerText = "Live Match";
+        statusEl.className = "lobby-status-badge bg-red-500/10 text-red-400 border-red-500/20 animate-pulse";
+      }
+      if(waitingScreen) waitingScreen.style.display = "none";
+      if(gameScreen) gameScreen.style.display = "block";
+
+      handleGameConfig(msg, userId, "hidden-start-btn", false, true);
+      return;
+    }
+
+    switch (msg.type) {
+      case "tournament_semi-finals":
+        if(statusEl) statusEl.innerText = "Semi-Finals";
+        if(bracketEl) {
+          Promise.all([
+            resolveUser(msg.payload.semi1.players[0]),
+            resolveUser(msg.payload.semi1.players[1]),
+            resolveUser(msg.payload.semi2.players[0]),
+            resolveUser(msg.payload.semi2.players[1])
+          ]).then(([u1, u2, u3, u4]) => {
+            bracketEl.innerHTML = createMatchHTML(u1, u2, "Semi-Final 1") + createMatchHTML(u3, u4, "Semi-Final 2");
+          });
+        }
+        break;
+
+      case "tournament_final":
+        if(statusEl) statusEl.innerText = "Grand Final";
+        if(bracketEl) {
+          Promise.all([
+            resolveUser(msg.payload.final.players[0]),
+            resolveUser(msg.payload.final.players[1])
+          ]).then(([u1, u2]) => {
+             // Append final if semi exists, else replace
+             const html = createMatchHTML(u1, u2, "⭐ Grand Final ⭐");
+             if(!bracketEl.innerHTML.includes("Semi-Final")) bracketEl.innerHTML = html;
+             else bracketEl.innerHTML += html;
+          });
+        }
+        cleanupGame(userId, false);
+        if(waitingScreen) waitingScreen.style.display = "flex";
+        if(gameScreen) gameScreen.style.display = "none";
+        break;
+
+      case "tournament_finish":
+        if(statusEl) statusEl.innerText = "Finished";
+        alert(`🏆 Tournament Winner: ${msg.payload.winner}`);
+        localStorage.removeItem('activeTournamentId');
+        setTimeout(() => navigateCallback("dashboard/game/tournament"), 2000);
+        break;
+    }
+  };
+}
