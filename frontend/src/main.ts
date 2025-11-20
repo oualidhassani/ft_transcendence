@@ -1663,7 +1663,7 @@ init: () => {
   const statusDiv = document.getElementById('settings-status') as HTMLDivElement;
   const avatarOptions = document.querySelectorAll<HTMLImageElement>(".avatar-option");
   const avatarInput = document.getElementById("settings-avatar") as HTMLInputElement;
-  const profileAvatar = document.querySelector('.user-avatar') as HTMLImageElement; // main avatar in UI
+  const profileAvatar = document.querySelector('.user-avatar') as HTMLImageElement;
 
   if (avatarOptions && avatarInput) {
     avatarOptions.forEach(option => {

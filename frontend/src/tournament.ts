@@ -108,7 +108,6 @@ export function createTournamentListener(userId: number, tournamentId: string, n
     </div>
   `;
 
-  // ✅ NEW: This missing function handles creating the bracket HTML easily
   const resolveAndRenderBracket = async (p1Id: string, p2Id: string, p3Id?: string, p4Id?: string) => {
     const u1 = await resolveUser(p1Id);
     const u2 = await resolveUser(p2Id);
@@ -122,7 +121,7 @@ export function createTournamentListener(userId: number, tournamentId: string, n
       amIPlaying = amIPlaying || u3.isMe || u4.isMe;
     }
 
-    return { html, amIPlaying, users: [u1, u2] }; // Return users for VS screen setup
+    return { html, amIPlaying, users: [u1, u2] };
   };
 
   const setupGameView = (p1: any, p2: any) => {
@@ -229,7 +228,6 @@ export function createTournamentListener(userId: number, tournamentId: string, n
         ).then(({ html, amIPlaying }) => {
           if(els.bracketContent) els.bracketContent.innerHTML = html;
 
-          // Determine who is playing whom to populate VS screen
           let p1 = null, p2 = null;
           resolveUser(msg.payload.semi1.players[0]).then(u1 => {
             resolveUser(msg.payload.semi1.players[1]).then(u2 => {
@@ -268,7 +266,7 @@ export function createTournamentListener(userId: number, tournamentId: string, n
           runCountdown(5, () => {
              if (amIPlaying) {
                 switchView('game');
-                setupGameView(users[0], users[1]); // Setup VS Screen
+                setupGameView(users[0], users[1]);
                 if(els.readyOverlay) els.readyOverlay.style.display = "flex";
                 if(els.readyBtn) {
                      els.readyBtn.innerHTML = "READY FOR FINAL!";
@@ -284,7 +282,6 @@ export function createTournamentListener(userId: number, tournamentId: string, n
         switchView('bracket');
         if(els.bracketTitle) els.bracketTitle.innerText = "CHAMPION";
 
-        // Just resolve user, don't use bracket renderer
         resolveUser(msg.payload.winner).then(winner => {
              if(els.bracketContent) {
                  els.bracketContent.innerHTML = `

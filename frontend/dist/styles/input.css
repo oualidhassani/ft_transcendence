@@ -466,7 +466,6 @@
   shadow-[0_0_40px_rgba(16,185,129,0.4)] hover:scale-105 hover:shadow-[0_0_60px_rgba(16,185,129,0.6)]
   transition-all duration-300 animate-pulse border border-emerald-400;
 }
-/* Tournament Bracket Styles - Tailwind Compatible */
 
 .big-match-card {
   @apply bg-gradient-to-br from-gray-800/80 to-gray-900/90;
