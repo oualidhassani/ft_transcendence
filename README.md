@@ -11,7 +11,7 @@
 -   **User Profiles**: Track stats, match history, and manage avatars.
 -   **Security**: HTTPS enabled by default with auto-generated self-signed certificates.
 
-## � Screenshots
+## 📸 Screenshots
 
 <div align="center">
   <img src="assets/images/landing_page.png" alt="Landing Page" width="800"/>
@@ -28,7 +28,7 @@
 |:---:|:---:|
 | ![Settings](assets/images/profile_settings.png) | ![Register](assets/images/register_page.png) |
 
-## �🛠 Tech Stack
+## 🛠 Tech Stack
 
 The project utilizes a modern and robust technology stack, containerized with Docker for consistency.
 
@@ -121,5 +121,7 @@ This project uses self-signed certificates generated via `generate_cert.sh` to e
 
 ## 👥 Authors
 
--   oualid hassani / aymen assaf / mohammed erretby / Youssef Bahij / Abdelaziz Es Sayouti
+-   [Your Name/Login]
 
+---
+*Created for 42 School*
