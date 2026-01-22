@@ -121,7 +121,4 @@ This project uses self-signed certificates generated via `generate_cert.sh` to e
 
 ## 👥 Authors
 
--   [Your Name/Login]
-
----
-*Created for 42 School*
+oualid hassani / aymen assaf / mohammed erretby / youssef bahij / Abdelaziz Es Sayouti
