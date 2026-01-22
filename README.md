@@ -11,7 +11,24 @@
 -   **User Profiles**: Track stats, match history, and manage avatars.
 -   **Security**: HTTPS enabled by default with auto-generated self-signed certificates.
 
-## 🛠 Tech Stack
+## � Screenshots
+
+<div align="center">
+  <img src="assets/images/landing_page.png" alt="Landing Page" width="800"/>
+  <p><em>Landing Page</em></p>
+</div>
+
+<br/>
+
+| Game Interface | User Dashboard |
+|:---:|:---:|
+| ![Game vs AI](assets/images/game_ai.png) | ![Dashboard](assets/images/dashboard_stats.png) |
+
+| Profile Settings | Registration |
+|:---:|:---:|
+| ![Settings](assets/images/profile_settings.png) | ![Register](assets/images/register_page.png) |
+
+## �🛠 Tech Stack
 
 The project utilizes a modern and robust technology stack, containerized with Docker for consistency.
 
